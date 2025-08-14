@@ -1,0 +1,10 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-CORS
+Flask-Mail
+psycopg2
+gunicorn
+requests
+google-generativeai
+python-dotenv
