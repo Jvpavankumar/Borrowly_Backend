@@ -16,7 +16,8 @@ app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USERNAME'] = 'no-reply@borrowly.in'
 app.config['MAIL_PASSWORD'] = 'CqUO7@T0*'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Pavan%402002@localhost:5432/Borrowly'
+# app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Pavan%402002@localhost:5432/Borrowly'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://borrowly_user:e8QDgeH8ZDsWY1b779OdmML3W293wLTi@dpg-d2esl2mr433s738ff5tg-a.singapore-postgres.render.com/borrowly'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 mail = Mail(app)
@@ -291,3 +292,4 @@ def change_password():
 # ------------------ Run Server ------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
