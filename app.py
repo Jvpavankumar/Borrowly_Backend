@@ -64,7 +64,22 @@ class Agent(db.Model):
     status = db.Column(db.Boolean, default=False)
     otp = db.Column(db.String(6), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+class LoanEnquiry(db.Model):
+    __tablename__ = 'loan_enquiries'
 
+    id = db.Column(db.Integer, primary_key=True)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    mobile_number = db.Column(db.String(15), nullable=False)
+    email = db.Column(db.String(200), nullable=True)
+    city = db.Column(db.String(100), nullable=False)
+    pincode = db.Column(db.String(10), nullable=False)
+    loan_type = db.Column(db.String(50), nullable=False)
+    loan_amount = db.Column(db.Integer, nullable=False)
+    employment_type = db.Column(db.String(50), nullable=False)
+    consent = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 # ------------------ Utility Functions ------------------
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -288,8 +303,72 @@ def change_password():
     db.session.commit()
 
     return jsonify({'message': 'Password changed successfully.'}), 200
+    
+@app.route('/LoanEnquiry', methods=['POST'])
+def loan_enquiry():
+    data = request.json
 
+    required_fields = [
+        'first_name',
+        'last_name',
+        'mobile_number',
+        'email',
+        'city',
+        'pincode',
+        'loan_type',
+        'loan_amount',
+        'employment_type',
+        'consent'
+    ]
+
+    for field in required_fields:
+        if field not in data or data[field] in [None, '', []]:
+            return jsonify({'message': f'Missing or empty field: {field}'}), 400
+
+    if not isinstance(data['consent'], bool) or not data['consent']:
+        return jsonify({'message': 'Consent is required to submit loan enquiry.'}), 400
+
+    enquiry = LoanEnquiry(
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        mobile_number=data['mobile_number'],
+        email=data['email'],
+        city=data['city'],
+        pincode=data['pincode'],
+        loan_type=data['loan_type'],
+        loan_amount=data['loan_amount'],
+        employment_type=data['employment_type'],
+        consent=data['consent']
+    )
+
+    db.session.add(enquiry)
+    db.session.commit()
+
+    return jsonify({'message': 'Loan enquiry submitted successfully!'}), 201
+
+@app.route('/GetLoanEnquiries', methods=['GET'])
+def get_all_loan_enquiries():
+    enquiries = LoanEnquiry.query.all()
+
+    result = []
+    for enquiry in enquiries:
+        result.append({
+            'id': enquiry.id,
+            'first_name': enquiry.first_name,
+            'last_name': enquiry.last_name,
+            'mobile_number': enquiry.mobile_number,
+            'email': enquiry.email,
+            'city': enquiry.city,
+            'pincode': enquiry.pincode,
+            'loan_type': enquiry.loan_type,
+            'loan_amount': enquiry.loan_amount,
+            'employment_type': enquiry.employment_type,
+            # 'consent': enquiry.consent
+        })
+
+    return jsonify(result), 200
 # ------------------ Run Server ------------------
 if __name__ == "__main__":
     app.run(debug=True)
+
 
