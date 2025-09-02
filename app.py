@@ -18,6 +18,7 @@ app.config['MAIL_USERNAME'] = 'no-reply@borrowly.in'
 app.config['MAIL_PASSWORD'] = 'CqUO7@T0*'
 # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:Pavan%402002@localhost:5432/Borrowly'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://borrowly_user:e8QDgeH8ZDsWY1b779OdmML3W293wLTi@dpg-d2esl2mr433s738ff5tg-a.singapore-postgres.render.com/borrowly'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 mail = Mail(app)
@@ -64,22 +65,58 @@ class Agent(db.Model):
     status = db.Column(db.Boolean, default=False)
     otp = db.Column(db.String(6), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-class LoanEnquiry(db.Model):
-    __tablename__ = 'loan_enquiries'
+
+# class LoanEnquiry(db.Model):
+#     __tablename__ = 'loan_enquiries'
+
+#     id = db.Column(db.Integer, primary_key=True)
+#     first_name = db.Column(db.String(100), nullable=False)
+#     last_name = db.Column(db.String(100), nullable=False)
+#     mobile_number = db.Column(db.String(15), nullable=False)
+#     email = db.Column(db.String(200), nullable=True)
+#     city = db.Column(db.String(100), nullable=False)
+#     pincode = db.Column(db.String(10), nullable=False)
+#     loan_type = db.Column(db.String(50), nullable=False)
+#     loan_amount = db.Column(db.Integer, nullable=False)
+#     employment_type = db.Column(db.String(50), nullable=False)
+#     consent = db.Column(db.Boolean, default=False)
+#     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class LoanEnquire(db.Model):
+    __tablename__ = 'loan_enquire'
 
     id = db.Column(db.Integer, primary_key=True)
-    first_name = db.Column(db.String(100), nullable=False)
-    last_name = db.Column(db.String(100), nullable=False)
-    mobile_number = db.Column(db.String(15), nullable=False)
-    email = db.Column(db.String(200), nullable=True)
-    city = db.Column(db.String(100), nullable=False)
-    pincode = db.Column(db.String(10), nullable=False)
+    customer_name = db.Column(db.String(100), nullable=False)
+    customer_email = db.Column(db.String(100), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False)
     loan_type = db.Column(db.String(50), nullable=False)
-    loan_amount = db.Column(db.Integer, nullable=False)
-    employment_type = db.Column(db.String(50), nullable=False)
-    consent = db.Column(db.Boolean, default=False)
+    status = db.Column(db.Enum('pending', 'canceled', 'rejected', 'accepted', name='loan_status_enum'), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    modified_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class NewSubscribe(db.Model):
+    __tablename__ = 'new_subscribe'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False, unique=True)
+    consent = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class ContactUs(db.Model):
+    __tablename__ = 'contact_us'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=False)
+    query = db.Column(db.Text, nullable=False)
+    loantaken = db.Column(db.Boolean, default=False)
+    status = db.Column(
+        db.Enum('pending', 'completed', 'rejected', name='contact_status_enum'),
+        default='pending',
+        nullable=False
+    )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    modified_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 # ------------------ Utility Functions ------------------
 def generate_otp():
     return str(random.randint(100000, 999999))
@@ -303,72 +340,184 @@ def change_password():
     db.session.commit()
 
     return jsonify({'message': 'Password changed successfully.'}), 200
-    
-@app.route('/LoanEnquiry', methods=['POST'])
-def loan_enquiry():
+
+# @app.route('/LoanEnquiry', methods=['POST'])
+# def loan_enquiry():
+#     data = request.json
+
+#     required_fields = [
+#         'first_name',
+#         'last_name',
+#         'mobile_number',
+#         'email',
+#         'city',
+#         'pincode',
+#         'loan_type',
+#         'loan_amount',
+#         'employment_type',
+#         'consent'
+#     ]
+
+#     for field in required_fields:
+#         if field not in data or data[field] in [None, '', []]:
+#             return jsonify({'message': f'Missing or empty field: {field}'}), 400
+
+#     if not isinstance(data['consent'], bool) or not data['consent']:
+#         return jsonify({'message': 'Consent is required to submit loan enquiry.'}), 400
+
+#     enquiry = LoanEnquiry(
+#         first_name=data['first_name'],
+#         last_name=data['last_name'],
+#         mobile_number=data['mobile_number'],
+#         email=data['email'],
+#         city=data['city'],
+#         pincode=data['pincode'],
+#         loan_type=data['loan_type'],
+#         loan_amount=data['loan_amount'],
+#         employment_type=data['employment_type'],
+#         consent=data['consent']
+#     )
+
+#     db.session.add(enquiry)
+#     db.session.commit()
+
+#     return jsonify({'message': 'Loan enquiry submitted successfully!'}), 201
+
+# @app.route('/GetLoanEnquiries', methods=['GET'])
+# def get_all_loan_enquiries():
+#     enquiries = LoanEnquiry.query.all()
+
+#     result = []
+#     for enquiry in enquiries:
+#         result.append({
+#             'id': enquiry.id,
+#             'first_name': enquiry.first_name,
+#             'last_name': enquiry.last_name,
+#             'mobile_number': enquiry.mobile_number,
+#             'email': enquiry.email,
+#             'city': enquiry.city,
+#             'pincode': enquiry.pincode,
+#             'loan_type': enquiry.loan_type,
+#             'loan_amount': enquiry.loan_amount,
+#             'employment_type': enquiry.employment_type,
+#             # 'consent': enquiry.consent
+#         })
+
+#     return jsonify(result), 200
+
+@app.route('/LoanEnquire', methods=['POST'])
+def create_loan_enquiry():
     data = request.json
-
-    required_fields = [
-        'first_name',
-        'last_name',
-        'mobile_number',
-        'email',
-        'city',
-        'pincode',
-        'loan_type',
-        'loan_amount',
-        'employment_type',
-        'consent'
-    ]
-
-    for field in required_fields:
-        if field not in data or data[field] in [None, '', []]:
-            return jsonify({'message': f'Missing or empty field: {field}'}), 400
-
-    if not isinstance(data['consent'], bool) or not data['consent']:
-        return jsonify({'message': 'Consent is required to submit loan enquiry.'}), 400
-
-    enquiry = LoanEnquiry(
-        first_name=data['first_name'],
-        last_name=data['last_name'],
-        mobile_number=data['mobile_number'],
-        email=data['email'],
-        city=data['city'],
-        pincode=data['pincode'],
-        loan_type=data['loan_type'],
-        loan_amount=data['loan_amount'],
-        employment_type=data['employment_type'],
-        consent=data['consent']
+    enquiry = LoanEnquire(
+        customer_name=data.get('customer_name'),
+        customer_email=data.get('customer_email'),
+        phone_number=data.get('phone_number'),
+        loan_type=data.get('loan_type'),
+        status=data.get('status', 'pending')
     )
-
     db.session.add(enquiry)
     db.session.commit()
+    return jsonify({'message': 'Loan enquiry created', 'id': enquiry.id}), 201
 
-    return jsonify({'message': 'Loan enquiry submitted successfully!'}), 201
-
-@app.route('/GetLoanEnquiries', methods=['GET'])
-def get_all_loan_enquiries():
-    enquiries = LoanEnquiry.query.all()
-
+@app.route('/GetLoanEnquires', methods=['GET'])
+def get_all_enquiries():
+    enquiries = LoanEnquire.query.all()
     result = []
-    for enquiry in enquiries:
+    for e in enquiries:
+        enquiry_data = {
+            'id': e.id,
+            'customer_name': e.customer_name,
+            'customer_email': e.customer_email,
+            'phone_number': e.phone_number,
+            'loan_type': e.loan_type,
+            'status': e.status,
+            'created_at': e.created_at,
+            'modified_at': e.modified_at
+        }
+
+        if e.status == 'rejected':
+            enquiry_data['message'] = 'Your loan enquiry has been rejected.'
+
+        result.append(enquiry_data)
+        
+    return jsonify(result), 200
+
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    data = request.json
+    email = data.get('email')
+    consent = data.get('consent', True)
+
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+
+    # Check if email already subscribed
+    if NewSubscribe.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email already subscribed'}), 400
+
+    subscriber = NewSubscribe(email=email, consent=consent)
+    db.session.add(subscriber)
+    db.session.commit()
+
+    return jsonify({'message': 'Subscribed successfully', 'id': subscriber.id}), 201
+
+@app.route('/Getsubscribe', methods=['GET'])
+def get_subscribers():
+    subs = NewSubscribe.query.all()
+    result = []
+    for s in subs:
         result.append({
-            'id': enquiry.id,
-            'first_name': enquiry.first_name,
-            'last_name': enquiry.last_name,
-            'mobile_number': enquiry.mobile_number,
-            'email': enquiry.email,
-            'city': enquiry.city,
-            'pincode': enquiry.pincode,
-            'loan_type': enquiry.loan_type,
-            'loan_amount': enquiry.loan_amount,
-            'employment_type': enquiry.employment_type,
-            # 'consent': enquiry.consent
+            'id': s.id,
+            'email': s.email,
+            'consent': s.consent,
+            'created_at': s.created_at
         })
+    return jsonify(result), 200
+
+@app.route('/Contactus', methods=['POST'])
+def create_contact_message():
+    data = request.json
+
+    # Validation
+    if not data.get('name') or not data.get('phone_number') or not data.get('query'):
+        return jsonify({'error': 'Name, phone number, and query are required'}), 400
+
+    contact = ContactUs(
+        name=data['name'],
+        phone_number=data['phone_number'],
+        query=data['query'],
+        loantaken=data.get('loantaken', False),
+        status=data.get('status', 'pending')
+    )
+    db.session.add(contact)
+    db.session.commit()
+
+    return jsonify({'message': 'Contact message submitted', 'id': contact.id}), 201
+
+@app.route('/Getcontactus', methods=['GET'])
+def get_all_contact_messages():
+    contacts = ContactUs.query.all()
+    result = []
+    for c in contacts:
+        contact_data = {
+            'id': c.id,
+            'name': c.name,
+            'phone_number': c.phone_number,
+            'query': c.query,
+            'loantaken': c.loantaken,
+            'status': c.status,
+            'created_at': c.created_at,
+            'modified_at': c.modified_at
+        }
+
+        if c.status == 'rejected':
+            contact_data['message'] = 'Your contact request has been rejected.'
+
+        result.append(contact_data)
 
     return jsonify(result), 200
+
+
 # ------------------ Run Server ------------------
 if __name__ == "__main__":
     app.run(debug=True)
-
-
